@@ -37,75 +37,92 @@ class selection_tool:
     def __init__(self):
         pass
     def connect(self):
-        pass
+        self.cid_key_save = self.box.figure.canvas.mpl_connect("key_press_event", self.key_save)
     def disconnect(self):
-        pass
+        self.box.figure.canvas.mpl_disconnect(self.cid_key_save)
         
     def key_save(self, event):
         if event.key == "c":
             self.save_frames()
-         
+    
+    def save_frames(self):
+        pass     
 
 ##Begin ModeSelect
 class ModeSelect:
-    def __init__(self, axes, dc1, dc2):
+    def __init__(self, axes, dc1, dc2, slices, append=False):
         self.dc1 = dc1
         self.dc2 = dc2
+        self.slices = slices
+        self.group_number = 0
+        self.x_count = 0
+        
+        #deal with the files list
+        if append:
+            #open files for append
+            self.file_info = open("frames-info.txt", "a", 0)
+            self.file = open("frames.ndx", "a", 0)
+        else:
+            #open files for writing
+            self.file_info = open("frames-info.txt", "w", 0)
+            self.file = open("frames.ndx", "w", 0)
+        
+        #initialize the selection methods and their related attributes
         self.axes = axes
-        self.mode_selectbox = SelectBox(self.axes, self.dc1, self.dc2)
+        self.mode_selectbox = SelectBox(self.axes, self.dc1, self.dc2, self.group_number, self.file, self.file_info)
+        self.mode_selectbin = SelectBins(self.axes, self.dc1, self.dc2, self.slices, self.group_number, self.file, self.file_info)
         self.select_mode = self.mode_selectbox
         self.select_mode.connect()
+        
+        #start up so that key presses get tied to here key_selection() method below
         self.cid_key_choose = self.axes.figure.canvas.mpl_connect("key_press_event", self.key_selection)
-    
-    
+
+       
     def key_selection(self, event):
         if event.key == "x":
             self.select_mode.disconnect()
-        if event.key == "b":
-            self.select_mode.disconnect()
-            self.select_mode = self.mode_selectbox
-            self.select_mode.connect()
-#Begin BinSelect
-
-
-##Begin SelectBox
-class SelectBox(selection_tool):
-    def __init__(self, axes, dc1, dc2):
+            self.x_count += 1
+            if self.x_count == 3:
+                self.axes.figure.canvas.mpl_disconnect(self.cid_key_choose)
+                self.file.close()
+                self.file_info.close()
+                print "Thank you for using the gui_fep package. Have a nice day!"
+        else:
+            self.x_count = 0
+            if event.key == "b":
+                self.select_mode.disconnect()
+                self.select_mode = self.mode_selectbox
+                self.select_mode.connect()
+            
+#Begin Simple Box
+class SimpleBox(selection_tool):
+    """class SimpleBox acts as a class of methods for managing a simple selection box GUI"""
+    def __init__(self, axes):
         self.box = axes.add_patch(patches.Rectangle((0,0),0,0, fill=False, edgecolor="k", linewidth=2))
         self.press = False
         self.busy = False
-        self.dc1 = dc1
-        self.dc2 = dc2
-        self.group_number = 0
         print "Got to init"
     
     def connect(self):
-        print "Connecting SelectBox"
+        selection_tool.connect(self) #connect the supper class events
+        print "Connecting SimpleBox"
         self.cid_press = self.box.figure.canvas.mpl_connect("button_press_event", self.on_press)        
         self.cid_move = self.box.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
         self.cid_release = self.box.figure.canvas.mpl_connect("button_release_event", self.on_release)
         
-        #open files for writing
-        self.file_info = open("frames-info.txt", "w", 0)
-        self.file = open("frames.ndx", "w", 0)
-        
         #make sure it's visible
         self.box.set_visible(True)
         
-        self.cid_key_save = self.box.figure.canvas.mpl_connect("key_press_event", self.key_save)
+        
         
     def disconnect(self):
-        print "Disconnecting SelectBox"
-        self.box.set_visible(False)
+        print "Disconnecting SimpleBox"
+        selection_tool.disconnect(self) #disconnect the super class events
+        self.box.set_visible(False) #make invisible now
         self.box.figure.canvas.draw()
         self.box.figure.canvas.mpl_disconnect(self.cid_press)        
         self.box.figure.canvas.mpl_disconnect(self.cid_move)
-        self.box.figure.canvas.mpl_disconnect(self.cid_release)
-        self.box.figure.canvas.mpl_disconnect(self.cid_key_save)
-        
-        #close all the files
-        self.file_info.close()
-        self.file.close()
+        self.box.figure.canvas.mpl_disconnect(self.cid_release)   
         
     def on_press(self, event):
         print "pressing"
@@ -135,19 +152,6 @@ class SelectBox(selection_tool):
         print "The bounds are at: "
         print self.get_bounds()
         
-    def save_frames(self):
-        print "saving frames"
-        self.busy = True
-        bounds = self.get_bounds()
-        self.file_info.write("[Group %d]\nBounds are from: \n%f < dc1 < %f \n%f < dc2 < %f\n" % (self.group_number, bounds[0],bounds[1],bounds[2],bounds[3]))
-        self.file.write("[group %d]\n"%self.group_number)
-        for i in range(np.shape(self.dc1)[0]):
-            if self.dc1[i] >= bounds[0] and self.dc1[i] <= bounds[1] and self.dc2[i] >= bounds[2] and self.dc2[i] <= bounds[3]:
-                self.file.write("%d\n" % (i+1)) 
-        self.group_number += 1
-        self.busy = False
-        print "done saving frames"
-        
     def get_vertices(self):
         xlocation = self.box.get_x()
         ylocation = self.box.get_y()
@@ -171,6 +175,49 @@ class SelectBox(selection_tool):
         ys = np.array([ylocation, ylocation+height])
         
         return np.array([xs.min(), xs.max(), ys.min(), ys.max()])
+
+#Begin BinSelect
+class SelectBins(SelectBox):
+    def __init__(self, axes, dc1, dc2, slices, groupnumber, file_save, file_info):
+        SimpleBox.__init__(self, axes)
+        self.dc1 = dc1
+        self.dc2 = dc2
+        self.slices = slices
+        self.group_number = groupnumber
+        self.file = file_save
+        self.file_info =file_info
+        
+        print "Initialized SelectBins"
+    
+    def save_frames(self):
+        print "not yet implemented"
+        
+        
+
+##Begin SelectBox
+class SelectBox(SimpleBox):
+    def __init__(self, axes, dc1, dc2, groupnumber, file_save, file_info):
+        SimpleBox.__init__(self, axes)
+        self.dc1 = dc1
+        self.dc2 = dc2
+        self.group_number = groupnumber
+        self.file = file_save
+        self.file_info =file_info
+        print "Initialized SelectBins"
+        
+    def save_frames(self):
+        print "saving frames"
+        self.busy = True
+        bounds = self.get_bounds()
+        self.file_info.write("[Group %d]\nBounds are from: \n%f < dc1 < %f \n%f < dc2 < %f\n" % (self.group_number, bounds[0],bounds[1],bounds[2],bounds[3]))
+        self.file.write("[group %d]\n"%self.group_number)
+        for i in range(np.shape(self.dc1)[0]):
+            if self.dc1[i] >= bounds[0] and self.dc1[i] <= bounds[1] and self.dc2[i] >= bounds[2] and self.dc2[i] <= bounds[3]:
+                self.file.write("%d\n" % (i+1)) 
+        self.group_number += 1
+        self.busy = False
+        print "done saving frames"
+        
 ##End SelectBox
 
 ###END CLASSES ^^^
@@ -283,7 +330,7 @@ def load_DC(dc_file, dc_use, bin_size, temperature, smooth_param):
     else:
         fe_smoothed = smooth2a(fe, smooth_param, smooth_param)
     
-    return x,y, fe_smoothed, dcA, dcB
+    return x,y, fe_smoothed, dcA, dcB, slices
 
 def get_args():
     par = argparse.ArgumentParser(description="parent set of parameters", add_help=False)
@@ -318,7 +365,7 @@ if __name__=="__main__":
     args = get_args()
     
     
-    x,y,z, DCA, DCB = load_DC(args.dc_file, args.dc_use, args.bins, args.temp, args.smooth)
+    x,y,z, DCA, DCB, slices = load_DC(args.dc_file, args.dc_use, args.bins, args.temp, args.smooth)
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -331,7 +378,7 @@ if __name__=="__main__":
     plt.savefig("%s.png" % args.save_name)
     
     if args.interactive:
-        mode = ModeSelect(ax, DCA, DCB)
+        mode = ModeSelect(ax, DCA, DCB, slices, append=args.append)
         plt.show(fig)
     
     os.chdir(cwd)
