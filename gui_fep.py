@@ -189,7 +189,7 @@ class SimpleBox(selection_tool):
 
 #Begin BinSelect
 class SelectBin(SimpleBox):
-    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, stuff, file_save, file_info):
+    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, udata, file_save, file_info):
         SimpleBox.__init__(self, axes)
         self.dc1 = dc1
         self.dc2 = dc2
