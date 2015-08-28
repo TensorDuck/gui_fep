@@ -50,12 +50,14 @@ class selection_tool:
 
 ##Begin ModeSelect
 class ModeSelect:
-    def __init__(self, axes, dc1, dc2, slices, append=False):
+    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, append=False):
         self.dc1 = dc1
         self.dc2 = dc2
         self.slices = slices
         self.group_number = 0
         self.x_count = 0
+        self.xedges = xedges
+        self.yedges = yedges
         
         #deal with the files list
         if append:
@@ -70,7 +72,7 @@ class ModeSelect:
         #initialize the selection methods and their related attributes
         self.axes = axes
         self.mode_selectbox = SelectBox(self.axes, self.dc1, self.dc2, self.group_number, self.file, self.file_info)
-        self.mode_selectbin = SelectBins(self.axes, self.dc1, self.dc2, self.slices, self.group_number, self.file, self.file_info)
+        self.mode_selectbin = SelectBin(self.axes, self.dc1, self.dc2, self.slices, self.xedges, self.yedges, self.group_number, self.file, self.file_info)
         self.select_mode = self.mode_selectbox
         self.select_mode.connect()
         
@@ -181,18 +183,50 @@ class SimpleBox(selection_tool):
         return np.array([xs.min(), xs.max(), ys.min(), ys.max()])
 
 #Begin BinSelect
-class SelectBins(SimpleBox):
-    def __init__(self, axes, dc1, dc2, slices, groupnumber, file_save, file_info):
+class SelectBin(SimpleBox):
+    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, groupnumber, file_save, file_info):
         SimpleBox.__init__(self, axes)
         self.dc1 = dc1
         self.dc2 = dc2
         self.slices = slices
+        self.xedges = xedges
+        self.yedges = yedges
+        
         self.group_number = groupnumber
         self.file = file_save
         self.file_info =file_info
         
         print "Initialized SelectBins"
     
+    def on_release(self, event):
+        if self.busy:
+            return
+        self.busy=True
+        self.press = False
+        
+        
+        bounds = self.get_bounds()
+        possible_small_x = self.xedges[self.xedges <= bounds[0]]
+        possible_big_x = self.xedges[self.xedges >= bounds[1]]
+        possible_small_y = self.yedges[self.yedges <= bounds[2]]
+        possible_big_y = self.yedges[self.yedges>= bounds[3]]
+        
+        small_x = np.max(possible_small_x)
+        big_x = np.min(possible_big_x)
+        small_y = np.max(possible_small_y)
+        big_y = np.min(possible_big_y)
+        
+        self.box.set_x(small_x)
+        self.box.set_y(small_y)
+        self.box.set_width(big_x - small_x)
+        self.box.set_height(big_y - small_y)
+        self.box.figure.canvas.draw()
+        
+        print "The bounds are at: "
+        print self.get_bounds()
+        
+        self.busy=False
+        
     def save_frames(self):
         print "not yet implemented"
         
@@ -225,6 +259,13 @@ class SelectBox(SimpleBox):
 ##End SelectBox
 
 ###END CLASSES ^^^
+
+
+
+
+
+
+###################################################################################
 
 def smooth_iter(arrayin, N):
     for i in range(N):
@@ -382,7 +423,7 @@ if __name__=="__main__":
     plt.savefig("%s.png" % args.save_name)
     
     if args.interactive:
-        mode = ModeSelect(ax, DCA, DCB, slices, append=args.append)
+        mode = ModeSelect(ax, DCA, DCB, slices, x, y, append=args.append)
         plt.show(fig)
     
     os.chdir(cwd)
