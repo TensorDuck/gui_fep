@@ -228,7 +228,17 @@ class SelectBin(SimpleBox):
         self.busy=False
         
     def save_frames(self):
-        print "not yet implemented"
+        print "saving frames"
+        self.busy = True
+        bounds = self.get_bounds()
+        self.file_info.write("[Group %d]\nBounds are from: \n%f < dc1 < %f \n%f < dc2 < %f\n" % (self.group_number, bounds[0],bounds[1],bounds[2],bounds[3]))
+        self.file.write("[group %d]\n"%self.group_number)
+        for i in range(np.shape(self.dc1)[0]):
+            if self.dc1[i] >= bounds[0] and self.dc1[i] <= bounds[1] and self.dc2[i] >= bounds[2] and self.dc2[i] <= bounds[3]:
+                self.file.write("%d\n" % (i+1)) 
+        self.group_number += 1
+        self.busy = False
+        print "done saving frames"
         
         
 
