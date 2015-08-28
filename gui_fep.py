@@ -278,8 +278,6 @@ def load_DC(dc_file, dc_use, bin_size, temperature, smooth_param):
     
     fe = fe - fe.min() 
     
-    return fe
-    
     if smooth_param == 0:
         fe_smoothed = fe
     else:
