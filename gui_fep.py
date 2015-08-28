@@ -262,7 +262,7 @@ def load_DC(dc_file, dc_use, bin_size, temperature, smooth_param):
     dcA = data[:,dc_use[0]]
     dcB = data[:,dc_use[1]]
     
-    z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=[bin_size,bin_size], statistic='mean')
+    z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=[bin_size,bin_size], statistic='sum')
     #z,x,y = np.histogram2d(dcA, dcB, bins=[bin_size,bin_size], normed=True)
 
     min_prob = np.min(z)
