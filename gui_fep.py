@@ -177,7 +177,7 @@ class SimpleBox(selection_tool):
         return np.array([xs.min(), xs.max(), ys.min(), ys.max()])
 
 #Begin BinSelect
-class SelectBins(SelectBox):
+class SelectBins(SimpleBox):
     def __init__(self, axes, dc1, dc2, slices, groupnumber, file_save, file_info):
         SimpleBox.__init__(self, axes)
         self.dc1 = dc1
