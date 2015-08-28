@@ -30,6 +30,11 @@ kb = 6.022141*1.380650/(4.184*1000.0)
 
 ###Classes for working with GUI
 
+##class for holding universal types of data shared between different methods
+class UniversalDataHolder:
+    def __init__(self):
+        self.group_number = 0
+        
 ##class for all selectin tools
 
 class selection_tool:
@@ -54,7 +59,7 @@ class ModeSelect:
         self.dc1 = dc1
         self.dc2 = dc2
         self.slices = slices
-        self.group_number = 0
+        self.udata = UniversalDataHolder()
         self.x_count = 0
         self.xedges = xedges
         self.yedges = yedges
@@ -71,8 +76,8 @@ class ModeSelect:
         
         #initialize the selection methods and their related attributes
         self.axes = axes
-        self.mode_selectbox = SelectBox(self.axes, self.dc1, self.dc2, self.group_number, self.file, self.file_info)
-        self.mode_selectbin = SelectBin(self.axes, self.dc1, self.dc2, self.slices, self.xedges, self.yedges, self.group_number, self.file, self.file_info)
+        self.mode_selectbox = SelectBox(self.axes, self.dc1, self.dc2, self.udata, self.file, self.file_info)
+        self.mode_selectbin = SelectBin(self.axes, self.dc1, self.dc2, self.slices, self.xedges, self.yedges, self.udata, self.file, self.file_info)
         self.select_mode = self.mode_selectbox
         self.select_mode.connect()
         
@@ -184,7 +189,7 @@ class SimpleBox(selection_tool):
 
 #Begin BinSelect
 class SelectBin(SimpleBox):
-    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, groupnumber, file_save, file_info):
+    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, stuff, file_save, file_info):
         SimpleBox.__init__(self, axes)
         self.dc1 = dc1
         self.dc2 = dc2
@@ -192,7 +197,7 @@ class SelectBin(SimpleBox):
         self.xedges = xedges
         self.yedges = yedges
         
-        self.group_number = groupnumber
+        self.udata = udata
         self.file = file_save
         self.file_info =file_info
         
@@ -244,11 +249,11 @@ class SelectBin(SimpleBox):
 
 ##Begin SelectBox
 class SelectBox(SimpleBox):
-    def __init__(self, axes, dc1, dc2, groupnumber, file_save, file_info):
+    def __init__(self, axes, dc1, dc2, udata, file_save, file_info):
         SimpleBox.__init__(self, axes)
         self.dc1 = dc1
         self.dc2 = dc2
-        self.group_number = groupnumber
+        self.udata = udata
         self.file = file_save
         self.file_info =file_info
         print "Initialized SelectBins"
@@ -400,7 +405,7 @@ def get_args():
     par.add_argument("--append", default=False, action="store_true", help="use this flag to append to all .ndx files of the same name")
     par.add_argument("--bins", type=int, nargs=2, default=[50,50], help="Specify number of bins in each direction of DC1 and DC2")
     par.add_argument("--range", type=float, default=None, nargs=4, help="Range for binning the data")
-    par.add_argument("--temp", type=float, nargs="+", help="specify the temperature for the data, can be an array")
+    par.add_argument("--temp", type=float, nargs="+", default=300, help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
     args = par.parse_args()
     
