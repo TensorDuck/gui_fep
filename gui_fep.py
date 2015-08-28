@@ -94,7 +94,7 @@ class ModeSelect:
                 self.select_mode = self.mode_selectbox
                 self.select_mode.connect()
             if event.key == "2":
-                self.selct_mode.disconnect()
+                self.select_mode.disconnect()
                 self.select_mode = self.mode_selectbin
                 self.select_mode.connect()
             
