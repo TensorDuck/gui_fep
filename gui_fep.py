@@ -348,13 +348,16 @@ def get_test_case():
 #def onclick(event):
     print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(event.button, event.x, event.y, event.xdata, event.ydata)
 
-def load_DC(dc_file, dc_use, bin_size, temperature, smooth_param):
+def load_DC(dc_file, dc_use, bin_size, ran_size, temperature, smooth_param):
     data = np.loadtxt(dc_file)
     
     dcA = data[:,dc_use[0]]
     dcB = data[:,dc_use[1]]
     
-    z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=[bin_size,bin_size], statistic='sum')
+    if ran_size == None:
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=[bin_size,bin_size], statistic='sum')
+    else:
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, range=np.reshape(ran_size,(2,2)), statistic='sum')
     #z,x,y = np.histogram2d(dcA, dcB, bins=[bin_size,bin_size], normed=True)
 
     min_prob = np.min(z)
@@ -385,10 +388,13 @@ def get_args():
     par.add_argument("--save_name", type=str, help="Specify the name of the file to save the .png file of the free energy to")
     par.add_argument("--interactive", default=False, action="store_true", help="specify the interactive mode for selecting data points")
     par.add_argument("--append", default=False, action="store_true", help="use this flag to append to all .ndx files of the same name")
-    par.add_argument("--bins", type=int, default=50, help="Number of bins to use in the DC1 and DC2 directions")
+    par.add_argument("--bins", type=int, nargs=2, default=[50,50] help="Number of bins to use in the DC1 and DC2 directions")
+    par.add_argument("--range", type=float, default=None, nargs=4, help="Range for binning the data")
     par.add_argument("--temp", type=float, nargs="+", help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
-    
+    group = par.add_mutually_exclusive_group()
+    group.add_argument("--bins", type=int, nargs=2, default=[50,50], help="Specify number of bins in each direction of DC1 and DC2")
+    group.add_argument("--bins", type=int, nargs=1, default=50, help="Specify number of bins in both directions of DC1 and DC2")
     args = par.parse_args()
     
     args = sanitize_args(args)
@@ -410,7 +416,7 @@ if __name__=="__main__":
     args = get_args()
     
     
-    x,y,z, DCA, DCB, slices = load_DC(args.dc_file, args.dc_use, args.bins, args.temp, args.smooth)
+    x,y,z, DCA, DCB, slices = load_DC(args.dc_file, args.dc_use, args.bins, args.range, args.temp, args.smooth)
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
