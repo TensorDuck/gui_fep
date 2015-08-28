@@ -89,9 +89,13 @@ class ModeSelect:
                 print "Thank you for using the gui_fep package. Have a nice day!"
         else:
             self.x_count = 0
-            if event.key == "b":
+            if event.key == "1":
                 self.select_mode.disconnect()
                 self.select_mode = self.mode_selectbox
+                self.select_mode.connect()
+            if event.key == "2":
+                self.selct_mode.disconnect()
+                self.select_mode = self.mode_selectbin
                 self.select_mode.connect()
             
 #Begin Simple Box
