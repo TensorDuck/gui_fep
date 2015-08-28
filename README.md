@@ -35,8 +35,11 @@ When using the interactive feature, here are the commands you should know to use
 'x' symbolizes pressing the x button on your keyboard
 
 '1' - Activites the box select. This lets you click and drag a box around the area you want to save frames to
+
 '2' - Actives the bin select. This lest you click and drag a box around the area. Any bins touching or inside the box is saved.
+
 'c' - Copies the frames to the file
+
 'x' - Deactivites all the selection tools. Pressing three times to exit the interactive mode and close all the files when you are done.
 
 
