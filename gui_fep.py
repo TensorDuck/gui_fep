@@ -450,7 +450,7 @@ def histogram_DCs(dcA, dcB, bin_size, ran_size, temperature, smooth_param):
     else:
         fe_smoothed = smooth2a(fe, smooth_param, smooth_param)
     
-    return x,y, fe_smoothed, dcA, dcB, slices
+    return x,y, fe_smoothed, slices
     
 def get_args():
     par = argparse.ArgumentParser(description="parent set of parameters", add_help=False)
@@ -471,8 +471,8 @@ def get_args():
     #diff_sub for analyinzg two files containing the DCs in two separate columns
     diff_sub = sub.add_parser("diff", parents=[par], help="For using data from two different files")
     diff_sub.add_argument("--files", type=str, nargs=2, help="Specify which two files to get data from for plotting")
-    diff_sub.add_argument("--skiprows", default=[0,0], type=int, help="Specify the number of rows to skip in each file individually, takes two arguments")
-    diff_sub.add_argument("--use_columns", default=[0,0], type=int, help="Specify which columns of the data to load")
+    diff_sub.add_argument("--skiprows", nargs=2, default=[0,0], type=int, help="Specify the number of rows to skip in each file individually, takes two arguments")
+    diff_sub.add_argument("--use_columns", nargs=2, default=[0,0], type=int, help="Specify which columns of the data to load")
     
     #group1 = diff_sub.add_mutually_exclusive_group("skiprows", "Specify the number of rows to skip when loading a file. Several ways of doing this is shown below:")
     #group1.add_argument("--skiprows", type=int, nargs=2, help="Specify the number of rows to skip in each file individually, takes two arguments")
@@ -495,9 +495,9 @@ def get_args():
 def sanitize_args(args):
     if not os.path.isdir(args.save_dir):
         os.mkdir(args.save_dir)
-    
-    if not os.path.isfile(args.dc_file):
-        raise IOError("Cannot find DC files, aborting")
+    if args.sub_type == "same": 
+        if not os.path.isfile(args.dc_file):
+            raise IOError("Cannot find DC files, aborting")
     
     return args
     
@@ -512,8 +512,8 @@ if __name__=="__main__":
     fig = plt.figure()
     ax = fig.add_subplot(111)
     qmesh = ax.pcolormesh(x,y,z.transpose()) #Note, the transpose is taken because pyplot follows the matlab convention. Columns of the matrix correspond to the x-axis and rows correspond to the y-axis. This is different from the np.histogram2d function, as the rows correspond to the x-edges and columns correspond to the y-edges
-    plt.xlabel("DC%d" % args.dc_use[0])
-    plt.ylabel("DC%d" % args.dc_use[1])
+    plt.xlabel("DC1")
+    plt.ylabel("DC1")
     plt.colorbar(qmesh)
     
     os.chdir(args.save_dir)
