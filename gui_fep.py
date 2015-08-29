@@ -16,6 +16,8 @@ Would be nice:
 - Dynamically adjust bin-size
 - Be able to look back and render multiple boxes of selected points
 
+
+Written by Justin Chen while working with Cecilia Clementi as a Physics PhD student at Rice University
 """
 
 import numpy as np
@@ -112,11 +114,12 @@ class SimpleBox(selection_tool):
         self.box = axes.add_patch(patches.Rectangle((0,0),0,0, fill=False, edgecolor="k", linewidth=2))
         self.press = False
         self.busy = False
+        self.name = "SimpleBox"
         print "Got to init"
     
     def connect(self):
         selection_tool.connect(self) #connect the supper class events
-        print "Connecting SimpleBox"
+        print "Connecting %s" % self.name
         self.cid_press = self.box.figure.canvas.mpl_connect("button_press_event", self.on_press)        
         self.cid_move = self.box.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
         self.cid_release = self.box.figure.canvas.mpl_connect("button_release_event", self.on_release)
@@ -127,7 +130,7 @@ class SimpleBox(selection_tool):
         
         
     def disconnect(self):
-        print "Disconnecting SimpleBox"
+        print "Disconnecting %s" % self.name
         selection_tool.disconnect(self) #disconnect the super class events
         self.box.set_visible(False) #make invisible now
         self.box.figure.canvas.draw()
@@ -201,6 +204,7 @@ class SelectBin(SimpleBox):
         self.file = file_save
         self.file_info =file_info
         
+        self.name = "SelectBin"
         print "Initialized SelectBins"
     
     def on_release(self, event):
@@ -256,6 +260,7 @@ class SelectBox(SimpleBox):
         self.udata = udata
         self.file = file_save
         self.file_info =file_info
+        self.name = "SelectBox"
         print "Initialized SelectBins"
         
     def save_frames(self):
@@ -394,11 +399,61 @@ def load_DC(dc_file, dc_use, bin_size, ran_size, temperature, smooth_param):
         fe_smoothed = smooth2a(fe, smooth_param, smooth_param)
     
     return x,y, fe_smoothed, dcA, dcB, slices
+    
+def get_data_array(load, skip, column):
+    data = np.loadtxt(load, skiprows=skip)
+    if data.ndim == 1:
+        if column == 0:
+            return data
+        else:
+            raise IOError("Column %d does not exist in file %s. File %s is a 1-D array" % (column, load, load))
+    else:
+        if column >= np.shape(data)[1]:
+            raise IOError("Column %d does not exist in file %s. Check to make sure you started counting columns with 0 and not 1" % (column, load))   
+        else:   
+            return data[:,column]
+        
+def get_DCs(args):
+    if args.sub_type == "same":
+        data = np.loadtxt(args.dc_file, skiprows=args.skiprows)
+        dcA = data[:,args.dc_use[0]]
+        dcB = data[:,args.dc_use[1]]     
+    elif args.sub_type == "diff":
+        dcA = get_data_array(args.files[0], args.skiprows[0], args.use_columns[0])
+        dcB = get_data_array(args.files[1], args.skiprows[1], args.use_columns[1])
+    else:
+        raise IOError("could not determine data type. Please specify either 'same' or 'diff'") 
+    
+    return dcA, dcB
+def histogram_DCs(dcA, dcB, bin_size, ran_size, temperature, smooth_param):
+    if ran_size == None:
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, statistic='sum')
+    else:
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, range=np.reshape(ran_size,(2,2)), statistic='sum')
+    #z,x,y = np.histogram2d(dcA, dcB, bins=[bin_size,bin_size], normed=True)
 
+    min_prob = np.min(z)
+    
+    zmasked = np.ma.masked_where(z==0, z)
+
+    z = np.log(z)    
+    z *= (-1.0) 
+    z *= kb 
+    z *= temperature
+    
+    fe = np.ma.masked_where(z==float("inf"), z)
+    
+    fe = fe - fe.min() 
+    
+    if smooth_param == 0:
+        fe_smoothed = fe
+    else:
+        fe_smoothed = smooth2a(fe, smooth_param, smooth_param)
+    
+    return x,y, fe_smoothed, dcA, dcB, slices
+    
 def get_args():
     par = argparse.ArgumentParser(description="parent set of parameters", add_help=False)
-    par.add_argument("--dc_file", type=str, help="Specify the file containing the DC coordinates")
-    par.add_argument("--dc_use", type=int, nargs=2, default=[1, 2], help="specify which DC coordinates to use, defaults are 1 and 2")
     par.add_argument("--save_dir", default=os.getcwd(), type=str, help="directory for saving the plots")
     par.add_argument("--save_name", type=str, help="Specify the name of the file to save the .png file of the free energy to")
     par.add_argument("--interactive", default=False, action="store_true", help="specify the interactive mode for selecting data points")
@@ -408,6 +463,29 @@ def get_args():
     par.add_argument("--temp", type=float, nargs="+", default=300, help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
     args = par.parse_args()
+    
+    
+    parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file")
+    sub = par.add_subparsers(dest="sub_type")
+    
+    #diff_sub for analyinzg two files containing the DCs in two separate columns
+    diff_sub = sub.add_parser("diff", parents=[par], help="For using data from two different files")
+    diff_sub.add_argument("--files", type=str, nargs=2, help="Specify which two files to get data from for plotting")
+    diff_sub.add_argument("--skiprows", default=[0,0], type=int, help="Specify the number of rows to skip in each file individually, takes two arguments")
+    diff_sub.add_argument("--use_columns", default=[0,0], type=int, help="Specify which columns of the data to load")
+    
+    #group1 = diff_sub.add_mutually_exclusive_group("skiprows", "Specify the number of rows to skip when loading a file. Several ways of doing this is shown below:")
+    #group1.add_argument("--skiprows", type=int, nargs=2, help="Specify the number of rows to skip in each file individually, takes two arguments")
+    #group1.add_argument("--skipboth", type=int, help="Specify the number of rows to skip in each file individually")
+    
+    
+    #same_sub for analyzing a single file containing the DCs in two separate columns
+    same_sub.add_argument("same", parents=[par], help="For using data from a single file")
+    same_sub.add_argument("--dc_file", type=str, help="Specify the file containing the DC coordinates")
+    same_sub.add_argument("--dc_use", type=int, nargs=2, default=[1, 2], help="specify which DC coordinates to use, defaults are 1 and 2")
+    same_sub.add_argument("--skiprows", type=int, default=0, help="Specify the number of rows to skip when reading the file")
+    
+    
     
     args = sanitize_args(args)
 
@@ -427,8 +505,9 @@ if __name__=="__main__":
     cwd = os.getcwd()
     args = get_args()
     
+    dcA, dcB = get_DCs(args)
     
-    x,y,z, DCA, DCB, slices = load_DC(args.dc_file, args.dc_use, args.bins, args.range, args.temp, args.smooth)
+    x,y,z, slices = histogram_DCs(dcA, dcB, args.bins, args.range, args.temp, args.smooth)
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -441,7 +520,7 @@ if __name__=="__main__":
     plt.savefig("%s.png" % args.save_name)
     
     if args.interactive:
-        mode = ModeSelect(ax, DCA, DCB, slices, x, y, append=args.append)
+        mode = ModeSelect(ax, dcA, dcB, slices, x, y, append=args.append)
         plt.show(fig)
     
     os.chdir(cwd)
