@@ -466,7 +466,7 @@ def get_args():
     
     
     parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file")
-    sub = par.add_subparsers(dest="sub_type")
+    sub = parser.add_subparsers(dest="sub_type")
     
     #diff_sub for analyinzg two files containing the DCs in two separate columns
     diff_sub = sub.add_parser("diff", parents=[par], help="For using data from two different files")
