@@ -462,7 +462,7 @@ def get_args():
     par.add_argument("--range", type=float, default=None, nargs=4, help="Range for binning the data")
     par.add_argument("--temp", type=float, nargs="+", default=300, help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
-    args = par.parse_args()
+
     
     
     parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file")
@@ -486,7 +486,7 @@ def get_args():
     same_sub.add_argument("--skiprows", type=int, default=0, help="Specify the number of rows to skip when reading the file")
     
     
-    
+    args = parser.parse_args()
     args = sanitize_args(args)
 
     
