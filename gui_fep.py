@@ -480,7 +480,7 @@ def get_args():
     
     
     #same_sub for analyzing a single file containing the DCs in two separate columns
-    same_sub.add_argument("same", parents=[par], help="For using data from a single file")
+    same_sub = sub.add_parser("same", parents=[par], help="For using data from a single file")
     same_sub.add_argument("--dc_file", type=str, help="Specify the file containing the DC coordinates")
     same_sub.add_argument("--dc_use", type=int, nargs=2, default=[1, 2], help="specify which DC coordinates to use, defaults are 1 and 2")
     same_sub.add_argument("--skiprows", type=int, default=0, help="Specify the number of rows to skip when reading the file")
