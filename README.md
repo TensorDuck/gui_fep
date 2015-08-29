@@ -8,7 +8,7 @@ gui_fep.py
  
 Currently, all the useful stuff is contained here. Right now, this can do:
  
-1. Load in a .ev (eigenvector) file from the LSDMap package
+1. Load in a .ev (eigenvector) file from the LSDMap package, OR specify separate files. As well as options for skipping header rows and specifying columns of data to use
 2. Select frames using the --interactive flag using a GUI
 3. Save the frames to the file frames.ndx by pressing 'c'
 4. Save the bounds for those frames to the file frames-info.txt
@@ -16,10 +16,28 @@ Currently, all the useful stuff is contained here. Right now, this can do:
  
 Basic Instructions for Quickstart
 ---------------------------------
- 
-Specify the file you want to load with the --dc_file 
 
-The first two (non-trivial) DCs are plotted 
+If using only one file:
+
+Use positional argument 'same' first
+
+Specify the file you want to load with the --dc_file DC-FILE
+
+By default, column 1 and 2 are plotted (in the python numbering convention. So specify 0 for the true first column). This way, the first two (non-trivial) DCs are plotted from an .ev file.  
+
+Change which columns to plot using the --dc_use COLUMN COLUMN
+
+If using two files:
+
+Use positional argument 'diff' first
+
+Specify the two files you want to use with --files FILE FILE
+
+Then sepcify the columns of each data file using the --use_columns option COLUMN--FILE1 COLUMN-FILE2
+
+
+Once the file is loaded, you have options for controlling what is shown and how things get saved:
+
 
 Use --interactive if you want to access the GUI for saving frames
 
@@ -49,8 +67,7 @@ Known Bugs and Future Fixes
 2. Currently, the built in GUI features from matplotlib can interfere with these added features. Plan to disable them in the future.
 3. Implement Multi Select (select multiple bins in an irregular fashion) and circular select (select a circular or ellipsoidal area)
 4. Option to select the group name of your choice when saving the frames
-5. Handling multiple file types and formats
-6. Handling weighted data
+5. Handling weighted data
 
 
 Please feel free to notify me of features you would find interseting or bugs you find annoying.

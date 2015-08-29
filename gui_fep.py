@@ -465,7 +465,7 @@ def get_args():
 
     
     
-    parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file")
+    parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file. Whenever numbers of columns or rows need to be specified, use the Python numbering scheme for those, meaning starting with 0")
     sub = parser.add_subparsers(dest="sub_type")
     
     #diff_sub for analyinzg two files containing the DCs in two separate columns
