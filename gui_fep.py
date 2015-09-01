@@ -25,6 +25,7 @@ import os
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.lines as lines
 from scipy.sparse import spdiags
 import scipy.stats as stats
 
@@ -200,6 +201,7 @@ class SelectBin(SimpleBox):
         self.xedges = xedges
         self.yedges = yedges
         
+        
         self.udata = udata
         self.file = file_save
         self.file_info =file_info
@@ -276,8 +278,61 @@ class SelectBox(SimpleBox):
         self.busy = False
         print "done saving frames"
         
-##End SelectBox
-
+##Begin SelectMultiBin
+class SelectMultiBin(SimpleBox):
+    def __init__(self, axes, dc1, dc2, slices, xedges, yedges, udata, file_save, file_info):
+        SimpleBox.__init__(self, axes)
+        self.dc1 = dc1
+        self.dc2 = dc2
+        self.slices = slices
+        
+        self.xedges = xedges
+        self.yedges = yedges
+        
+        self.num_xbins = np.shape(xedges)[0] - 1
+        self.num_xbins_all = self.num_xbins + 2
+        self.num_ybins = np.shape(yedges)[0] - 1
+        #assign an extra edge to the beginning and end of the _all lists. 
+        #This is because SciPy hashes all values outside of the range into extra bins before and after the range
+        #This happens in both directions and consequently adds 2 to each dimension of the matrix 
+        self.xedges_all = np.array(xedges)
+        self.yedges_all = np.array(yedges)
+        
+        #make an array keeping track of which bins have been selected.
+        self.selected_bins = np.zeros(self.num_xbins, self.num_ybins)
+        self.line_lists = []
+        for i in range(1):
+            line_lists.append(lines.Line2D([0,0], [0,0], color='k')
+        
+        
+        self.udata = udata
+        self.file = file_save
+        self.file_info =file_info
+        
+        self.name = "SelectBin"
+        print "Initialized SelectMultiBins"
+    
+    def save_frames(self):
+        print "saving frames"
+        self.busy = True
+        self.file_info.write("[Group %d]\nBounds are: \n%f < dc1 < %f \n%f < dc2 < %f\n" % (self.udata.group_number, np.min(self.xedges), np.max(self.xedges), np.min(self.yedges), np.max(self.yedges)))
+        real_string = "\n"
+        selected_frames = []
+        for i in xrange(self.num_xbins):
+            temp_string = ""
+            for j in xrange(self.num_ybins):
+                temp_string += "%2d" % self.selected_bins[i,j] ##collect all the values of 1 and 0 for this row
+                selected_frames.append((i+1)*(self.num_xbins_all) + j + 1)
+            real_string = temp_string + "\n" real_string ##add them into the real string
+        
+        for idx, value in slices: ##write the ndx file
+            if value in selected_frames:
+                self.file.write("%d\n" % (idx+1)) 
+                
+        self.file_info.write(real_string) #save a grid in the formatted way
+        self.udata.group_number += 1
+        self.busy = False
+        print "done saving frames"
 ###END CLASSES ^^^
 
 
@@ -367,38 +422,6 @@ def get_test_case():
 
 #def onclick(event):
     print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(event.button, event.x, event.y, event.xdata, event.ydata)
-
-def load_DC(dc_file, dc_use, bin_size, ran_size, temperature, smooth_param):
-    data = np.loadtxt(dc_file)
-    
-    dcA = data[:,dc_use[0]]
-    dcB = data[:,dc_use[1]]
-    
-    if ran_size == None:
-        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, statistic='sum')
-    else:
-        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, range=np.reshape(ran_size,(2,2)), statistic='sum')
-    #z,x,y = np.histogram2d(dcA, dcB, bins=[bin_size,bin_size], normed=True)
-
-    min_prob = np.min(z)
-    
-    zmasked = np.ma.masked_where(z==0, z)
-
-    z = np.log(z)    
-    z *= (-1.0) 
-    z *= kb 
-    z *= temperature
-    
-    fe = np.ma.masked_where(z==float("inf"), z)
-    
-    fe = fe - fe.min() 
-    
-    if smooth_param == 0:
-        fe_smoothed = fe
-    else:
-        fe_smoothed = smooth2a(fe, smooth_param, smooth_param)
-    
-    return x,y, fe_smoothed, dcA, dcB, slices
     
 def get_data_array(load, skip, column):
     data = np.loadtxt(load, skiprows=skip)
