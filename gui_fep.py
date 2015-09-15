@@ -534,7 +534,11 @@ if __name__=="__main__":
     
     dcA, dcB = get_DCs(args)
     
-    x,y,z, slices = histogram_DCs(dcA, dcB, args.bins, args.range, args.temp, args.smooth)
+    if args.weights == None:
+        wt = None
+    else:
+        wt = np.loadtxt(args.weights)
+    x,y,z, slices = histogram_DCs(dcA, dcB, args.bins, args.range, args.temp, args.smooth, weights=wt)
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
