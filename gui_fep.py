@@ -489,7 +489,7 @@ def get_args():
     par.add_argument("--range", type=float, default=None, nargs=4, help="Range for binning the data")
     par.add_argument("--temp", type=float, nargs="+", default=300, help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
-    parr.add_argument("--weights", type=str, default=None, help="Specify the file containing the weights")
+    par.add_argument("--weights", type=str, default=None, help="Specify the file containing the weights")
     
     
     parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file. Whenever numbers of columns or rows need to be specified, use the Python numbering scheme for those, meaning starting with 0")
