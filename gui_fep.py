@@ -277,7 +277,7 @@ class SelectBox(SimpleBox):
         self.udata.group_number += 1
         self.busy = False
         print "done saving frames"
- '''       
+'''       
 ##Begin SelectMultiBin
 class SelectMultiBin(SimpleBox):
     def __init__(self, axes, dc1, dc2, slices, xedges, yedges, udata, file_save, file_info):
