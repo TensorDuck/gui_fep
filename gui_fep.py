@@ -448,11 +448,15 @@ def get_DCs(args):
         raise IOError("could not determine data type. Please specify either 'same' or 'diff'") 
     
     return dcA, dcB
-def histogram_DCs(dcA, dcB, bin_size, ran_size, temperature, smooth_param):
+    
+def histogram_DCs(dcA, dcB, bin_size, ran_size, temperature, smooth_param, weights=None):
+    if weights == None: #default weights
+        weights = np.ones(np.shape(dcA)[0])
+        
     if ran_size == None:
-        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, statistic='sum')
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, weights, bins=bin_size, statistic='sum')
     else:
-        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, np.ones(np.shape(dcA)[0]), bins=bin_size, range=np.reshape(ran_size,(2,2)), statistic='sum')
+        z, x, y, slices = stats.binned_statistic_2d(dcA, dcB, weights, bins=bin_size, range=np.reshape(ran_size,(2,2)), statistic='sum')
     #z,x,y = np.histogram2d(dcA, dcB, bins=[bin_size,bin_size], normed=True)
 
     min_prob = np.min(z)
@@ -485,7 +489,7 @@ def get_args():
     par.add_argument("--range", type=float, default=None, nargs=4, help="Range for binning the data")
     par.add_argument("--temp", type=float, nargs="+", default=300, help="specify the temperature for the data, can be an array")
     par.add_argument("--smooth", type=int, default=1, help="specify the amount of smoothing, higher=more smooth")
-
+    parr.add_argument("--weights", type=str, default=None, help="Specify the file containing the weights")
     
     
     parser = argparse.ArgumentParser(description="Options for gui_fep script. Use either diff for two different files or same for the same file. Whenever numbers of columns or rows need to be specified, use the Python numbering scheme for those, meaning starting with 0")
